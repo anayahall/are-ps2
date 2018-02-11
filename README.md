@@ -3,21 +3,21 @@
 ## February 2018
 
 ## What is it
-ARE problem set 2 is the second problem set for ARE 212.
+The second problem set for ARE 212.
 
 ## How do I use it
-Clone the repo and open in R-studio! 
+Clone the repo from github.com and open in R-studio! This can be done on the command line or directly in R-studio with the url from github.com.  
 
-### Basic workflow
+### Basic workflow for version control
 In your directory, check for updates in remote repository using:
 
 	git fetch
 
-if changes have been commited, use:
+if changes have been commited by others, then your local repo will be behind. Use:
 
 	git pull
 
-before beginning to work on local updates to the code. 
+to update your local master, before beginning to work on the code. 
 
 When you've finished working for the day and want to commit your changes use:
 
@@ -38,3 +38,24 @@ Finally, push your local commits to the remote repository on github
 	git push origin master
 
 where origin is the default nickname for the remote repo on github.com, and master is the name of the main branch we're working on. More on branches to come below!
+
+### Branch stuff
+
+Mostly we'll be workin on the main branch, called 'master'. Sometimes though, we may want to experiment with some code and save that to a separate branch before commiting and merging that with the main 'master' code. 
+
+To check which branch you're on use:
+
+	git branch
+
+To switch to a new branch use:
+
+	git checkout -b newbranch
+
+where 'newbranch' is the name of the new branch. Note: *git checkout* will create a new branch with the supplied name if none exists yet. You can also use *git checkout* to switch to an existing branch, like master. 
+
+
+
+
+
+
+
