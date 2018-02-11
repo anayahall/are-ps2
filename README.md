@@ -6,9 +6,9 @@
 The second problem set for ARE 212.
 
 ## How do I use it
-Clone the repo from github.com and open in R-studio! This can be done on the command line or directly in R-studio with the url from github.com.  
+Clone the repo from github.com and open in R-studio! This can be done on the command line or directly in R-studio with the url from github.com (big green button above). 
 
-### Basic workflow for version control
+## Basic workflow for version control
 In your directory, **check for updates** in remote repository using:
 
 	git fetch
@@ -37,7 +37,7 @@ Finally, **push your local commits** to the remote repository on github
 
 	git push origin master
 
-Here *origin* is the default nickname for the remote repo on github.com, and *master* is the name of the main branch we're working on. More on branches to come below!
+Here, *origin* is the default nickname for the remote repo on github.com, and *master* is the name of the main branch we're working on. More on branches below!
 
 
 ### Branch stuff
@@ -57,7 +57,7 @@ where 'newbranch' is the name of the new branch.
 Note: *git checkout* will create a new branch with the supplied name if none exists yet. You can also use *git checkout* to switch to an existing branch, like master. 
 
 
-
+*more information on commiting changes in branches to come!*
 
 
 
