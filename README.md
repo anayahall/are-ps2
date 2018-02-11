@@ -1,15 +1,15 @@
 # ARE 212 Problem Set #2
 
-## February 2018
+#### February 2018
 
 ## What is it
 The second problem set for ARE 212.
 
 ## How do I use it
-Clone the repo from github.com and open in R-studio! This can be done on the command line or directly in R-studio with the url from github.com (big green button above). 
+Clone the repo from github.com and open in R-studio. This can be done via the command line or directly in R-studio with the url from github.com (big green button above). 
 
 ## Basic workflow for version control
-In your directory, **check for updates** in remote repository using:
+In your local directory, **check for updates** in remote repository using:
 
 	git fetch
 
@@ -39,6 +39,7 @@ Finally, **push your local commits** to the remote repository on github
 
 Here, *origin* is the default nickname for the remote repo on github.com, and *master* is the name of the main branch we're working on. More on branches below!
 
+*Note: RStudio integrates beautifully with git, so pretty much all of the above can also be done in the RStudio GUI. Whenever you're working with a local directory that contains a .git file (meaning the directory has been initialized as a git repository), you will see a "Git" window in the "Environment/History" pane. You can do adding, commiting, pushing and pulling all from here. I tend to use the command line, which is why I focus on that workflow- I also think you get a better sense of what git is actually doing and how it interacts with github.com that way.*
 
 ### Branch stuff
 
