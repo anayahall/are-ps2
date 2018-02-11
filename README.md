@@ -9,15 +9,18 @@ The second problem set for ARE 212.
 Clone the repo from github.com and open in R-studio. This can be done via the command line or directly in R-studio with the url from github.com (big green button above). 
 
 ## Basic workflow for version control
+
 In your local directory, **check for updates** in remote repository using:
 
 	git fetch
 
-if changes have been commited by others, then your local repo will be behind. Use:
+If changes have been commited by others, then your local repo will be behind. 
+Toto **update your local master** use:
 
 	git pull
 
-to **update your local master**, before beginning to work on the code. 
+before beginning to work on the code. 
+
 
 When you've finished working for the day and want to commit your changes use:
 
