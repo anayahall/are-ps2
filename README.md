@@ -15,12 +15,12 @@ In your local directory, **check for updates** in remote repository using:
 	git fetch
 
 If changes have been commited by others, then your local repo will be behind. 
-Toto **update your local master** use:
+
+To **update your local master** use:
 
 	git pull
 
 before beginning to work on the code. 
-
 
 When you've finished working for the day and want to commit your changes use:
 
