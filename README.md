@@ -26,11 +26,15 @@ When you've finished working for the day and want to commit your changes use:
 
 	git status
 
-to see which files have been changed. Note: you can also use *git diff* to see exactly what has changed in those files.
+to see which files have been changed. Note: you can also use `git diff` to see exactly what has changed in those files.
 
-Then **add** those files: 
+Then **add** all those files: 
 
 	git add .
+
+or if you just want to add a specific file to be committed use
+
+	git add <filename>
 
 Then **commit** with a message explaining progress
 
@@ -58,7 +62,7 @@ To switch to a new branch use:
 
 where 'newbranch' is the name of the new branch. 
 
-**Note:** *git checkout* will create a new branch with the supplied name if none exists yet. You can also use *git checkout* to switch to an existing branch, like master. 
+**Note:** `git checkout -b` will create a new branch with the supplied name if none exists yet. You can also use `git checkout` to switch to an existing branch, like master. 
 
 
 *more information on commiting changes in branches to come!*
