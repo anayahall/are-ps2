@@ -4,26 +4,173 @@ author: "Anaya Hall"
 output: pdf_document
 ---
 
+# Part 1: Theory
+# Part 2: Applied: Returns to Scale in Electricity Supply
+
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
+# Setup ----
+# Options
+options(stringsAsFactors = F)
+# Packages
+library(pacman)
+p_load(knitr, kableExtra, WDI, dplyr, magrittr, ggplot2)
+
 ```
 
-## R Markdown
+First, load all OLS functions created in Problem Set #1.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r funs_ols}
+# Function to convert tibble, data.frame, or tbl_df to matrix
+to_matrix <- function(the_df, vars) {
+  # Create a matrix from variables in var
+  new_mat <- the_df %>%
+    # Select the columns given in 'vars'
+    select_(.dots = vars) %>%
+    # Convert to matrix
+    as.matrix()
+  # Return 'new_mat'
+  return(new_mat)
+}
+# Function for OLS coefficient estimates
+b_ols <- function(data, y_var, X_vars, intercept = T) {
+  # Require the 'dplyr' package
+  require(dplyr)
+  # Create the y matrix
+  y <- to_matrix(the_df = data, vars = y_var)
+  # Create the X matrix
+  X <- to_matrix(the_df = data, vars = X_vars)
+  # If 'intercept' is TRUE, then add a column of ones
+  if (intercept == T) {
+    # Bind a column of ones to X
+    X <- cbind(1, X)
+    # Name the new column "intercept"
+    colnames(X) <- c("intercept", X_vars)
+  }
+  # Calculate beta hat
+  beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
+  # Return beta_hat
+  return(beta_hat)
+}
+# Function that demeans the columns of Z
+demeaner <- function(N) {
+  # Create an N-by-1 column of 1s
+  i <- matrix(data = 1, nrow = N)
+  # Create the demeaning matrix
+  A <- diag(N) - (1/N) * i %*% t(i)
+  # Return A
+  return(A)
+}
+# Function to return OLS residuals
+resid_ols <- function(data, y_var, X_vars, intercept = T) {
+  # Require the 'dplyr' package
+  require(dplyr)
+  # Create the y matrix
+  y <- to_matrix(the_df = data, vars = y_var)
+  # Create the X matrix
+  X <- to_matrix(the_df = data, vars = X_vars)
+  # If 'intercept' is TRUE, then add a column of ones
+  if (intercept == T) {
+    # Bind a column of ones to X
+    X <- cbind(1, X)
+    # Name the new column "intercept"
+    colnames(X) <- c("intercept", X_vars)
+  }
+  # Calculate the sample size, n
+  n <- nrow(X)
+  # Calculate the residuals
+  resids <- (diag(n) - X %*% solve(t(X) %*% X) %*% t(X)) %*% y
+  # Return 'resids'
+  return(resids)
+}
+# Create function for r-squared, aic, and sic
+r2_ic <- function(data, y_var, X_vars, intercept = T) {
+  # Create y and X matrices
+  y <- to_matrix(data, vars = y_var)
+  X <- to_matrix(data, vars = X_vars)
+  # Add intercept column to X
+  X <- cbind(1, X)
+  # Find N and K (dimensions of X)
+  N <- nrow(X)
+  K <- ncol(X)
+  # Calculate the OLS residuals
+  e <- resid_ols(data, y_var, X_vars, intercept)
+  # Calculate sum of squared errors
+  sse <- t(e) %*% e
+  # Calculate the y_star (demeaned y)
+  y_star <- demeaner(N) %*% y
+  # Calculate r-squared values
+  r2_uc  <- 1 - sse / (t(y) %*% y)
+  r2     <- 1 - sse / (t(y_star) %*% y_star)
+  r2_adj <- 1 - (N-1) / (N-K) * (1 - r2)
+  # Calculate sic and aic
+  sic <- log(sse / N) + K / N * log(N)
+  aic <- log(sse / N) + 2 * K / N
+  # Calculate s2
+  s2 <- sse / (N - K)
+  # Create a data.frame
+  tmp_df <- data.frame(r2_uc, r2, r2_adj, sic, aic, sse, s2)
+  names(tmp_df) <- c("r2_uc", "r2", "r2_adj", "sic", "aic",
+    "sse", "s2")
+  return(tmp_df)
+}
+# Function to export a nice table
+r2_table <- function(org_df, scientific = T) {
+  # Column names for the output of r2_ic
+  r2_ic_names <- c("$R^2_\\text{uc}$", "$R^2$", "$R^2_\\text{adj}$",
+    "SIC", "AIC", "SSE", "$s^2$")
+  new_table <- org_df %>% knitr::kable(
+    row.names = F,
+    col.names = r2_ic_names,
+    digits = 4,
+    format.args = list(scientific = scientific)
+    )
+  return(new_table)
+}
 ```
 
-## Including Plots
+## Question 1:
+Read the data into R. Print out the data. Read it. Plot the series and make sure your data are read in correctly. Make sure your data are sorted by size (kwh). [Hint: Check for obvious typos in the data and if you find any fix them!]
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r read_data}
+
+nerlove <- readxl::read_excel("nerlove.xls", col_names=TRUE)
+
+# Fix typo in 13th row (missing a decimal!)
+nerlove[13, "PL"] <- 1.81
+
+nerlove
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r plotseries}
+
+nerlove %>%
+  ggplot(aes(x=PL, y=TC)) + geom_point()
+
+```
+
+## Question 2:
+Replicate regression I (page 176) in the paper. (You won’t be able to exactly, since the original data contained an error that has been fixed). Your estimate for the price differences will differ slightly, but the R2 will be the same.
+
+## Question 3:
+Conduct the hypothesis test using constant returns to scale (βy = 1) as your null hypothesis. What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?
+
+## Question 4:
+Plot the residuals against output. What do you notice? What does this potentially tell you from an economic perspective? Compute the correlation coefficient of the residuals with output for the entire sample? What does this tell you?
+
+## Question 5:
+Nerlove tried to remedy his ”residual problem” by running separate models for different sized industries. Divide your sample into 5 subgroups of 29 firms each according to the level of output. Estimate the regression model again for each group separately. Can you replicate Equations IIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?
+
+## Question 6:
+Create ”dummy variables” for each industry [which you may have done in the previous part]. Interact them with the output variable to create five ”slope coefficients”. Run a model, letting the intercept and slope coefficient on output differ across plants, but let the remainder of the coefficients be pooled across plants. Are there any noticeable changes in returns to scale from the previous part?
+
+## Question 7:
+Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?
+
+## Question 8:
+To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including (ln(y))2 as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.
+
+
+
