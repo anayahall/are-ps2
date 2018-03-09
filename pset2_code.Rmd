@@ -1,6 +1,6 @@
 ---
 title: 'Problem Set #2'
-author: "Anaya Hall"
+author: "Anaya Hall & Christian Miller"
 output: pdf_document
 ---
 
@@ -22,6 +22,9 @@ p_load(knitr, kableExtra, WDI, dplyr, magrittr, ggplot2)
 First, load all OLS functions created in Problem Set #1.
 
 ```{r funs_ols}
+
+# THIS IS ED'S FUNCTION --> REPLACE WITH CGM's
+
 # Function to convert tibble, data.frame, or tbl_df to matrix
 to_matrix <- function(the_df, vars) {
   # Create a matrix from variables in var
@@ -139,6 +142,7 @@ Read the data into R. Print out the data. Read it. Plot the series and make sure
 nerlove <- readxl::read_excel("nerlove.xls", col_names=TRUE)
 
 # Fix typo in 13th row (missing a decimal!)
+# DO THIS MORE ELEGANTLY! 
 nerlove[13, "PL"] <- 1.81
 
 nerlove
@@ -147,30 +151,14 @@ nerlove
 ```{r plotseries}
 
 nerlove %>%
-  ggplot(aes(x=PL, y=TC)) + geom_point()
+  ggplot(aes(x=PL, y=TC)) + geom_point() + labs(title="Nerlove Data", x="Price of Labor", y="Total Cost")
 
 ```
 
 ## Question 2:
-Replicate regression I (page 176) in the paper. (You won’t be able to exactly, since the original data contained an error that has been fixed). Your estimate for the price differences will differ slightly, but the R2 will be the same.
+Replicate regression I (page 176) in the paper. 
 
-## Question 3:
-Conduct the hypothesis test using constant returns to scale (βy = 1) as your null hypothesis. What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?
-
-## Question 4:
-Plot the residuals against output. What do you notice? What does this potentially tell you from an economic perspective? Compute the correlation coefficient of the residuals with output for the entire sample? What does this tell you?
-
-## Question 5:
-Nerlove tried to remedy his ”residual problem” by running separate models for different sized industries. Divide your sample into 5 subgroups of 29 firms each according to the level of output. Estimate the regression model again for each group separately. Can you replicate Equations IIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?
-
-## Question 6:
-Create ”dummy variables” for each industry [which you may have done in the previous part]. Interact them with the output variable to create five ”slope coefficients”. Run a model, letting the intercept and slope coefficient on output differ across plants, but let the remainder of the coefficients be pooled across plants. Are there any noticeable changes in returns to scale from the previous part?
-
-## Question 7:
-Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?
-
-## Question 8:
-To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including (ln(y))2 as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.
-
+Looks like this-ish:
+log(TC - PF) = B0 + B1(Q) + B2(Log(PL)0-log(PF)) + B2(log(PK)-log(PF))
 
 
