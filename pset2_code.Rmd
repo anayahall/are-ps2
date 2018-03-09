@@ -134,7 +134,7 @@ r2_table <- function(org_df, scientific = T) {
 ```
 
 ## Question 1:
-Read the data into R. Print out the data. Read it. Plot the series and make sure your data are read in correctly. Make sure your data are sorted by size (kwh). [Hint: Check for obvious typos in the data and if you find any fix them!] Heyyy girlll!!! HI FRIEND!! :)
+Read the data into R. Print out the data. Read it. Plot the series and make sure your data are read in correctly. Make sure your data are sorted by size (kwh). [Hint: Check for obvious typos in the data and if you find any fix them!]
 
 
 ```{r read_data}
