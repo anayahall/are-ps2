@@ -7,129 +7,94 @@ output: pdf_document
 # Part 1: Theory
 # Part 2: Applied: Returns to Scale in Electricity Supply
 
-```{r setup, include=FALSE}
-
-knitr::opts_chunk$set(echo = TRUE)
-# Setup ----
+```{r Setup, include=F}
+# Setup
+knitr::opts_chunk$set(echo = T, cache = T)
 # Options
 options(stringsAsFactors = F)
 # Packages
 library(pacman)
-p_load(knitr, kableExtra, WDI, dplyr, magrittr, ggplot2)
+p_load(knitr, kableExtra, WDI, dplyr, readr, magrittr, ggplot2)
 
 ```
 
-First, load all OLS functions created in Problem Set #1.
+First, load our OLS function created in Problem Set #1.
 
-```{r funs_ols}
-
-# THIS IS ED'S FUNCTION --> REPLACE WITH CGM's
-
-# Function to convert tibble, data.frame, or tbl_df to matrix
-to_matrix <- function(the_df, vars) {
-  # Create a matrix from variables in var
-  new_mat <- the_df %>%
-    # Select the columns given in 'vars'
-    select_(.dots = vars) %>%
-    # Convert to matrix
-    as.matrix()
-  # Return 'new_mat'
-  return(new_mat)
-}
-# Function for OLS coefficient estimates
-b_ols <- function(data, y_var, X_vars, intercept = T) {
+```{r OLS function}
+ols <- function(data, y, X, intercept = T) {
   # Require the 'dplyr' package
   require(dplyr)
+  
+  # Function to convert tibble, data.frame, or tbl_df to matrix
+  to_matrix <- function(the_df, vars) {
+    # Create a matrix from variables in var
+    new_mat <- the_df %>%
+      #Select the columns given in 'vars'
+      select_(.dots = vars) %>%
+      # Convert to matrix
+      as.matrix()
+    # Return 'new_mat'
+    return(new_mat)
+  }
+  
   # Create the y matrix
-  y <- to_matrix(the_df = data, vars = y_var)
+  y_data <- to_matrix (the_df = data, vars = y)
   # Create the X matrix
-  X <- to_matrix(the_df = data, vars = X_vars)
+  X_data <- to_matrix (the_df = data, vars = X)
   # If 'intercept' is TRUE, then add a column of ones
   if (intercept == T) {
-    # Bind a column of ones to X
-    X <- cbind(1, X)
-    # Name the new column "intercept"
-    colnames(X) <- c("intercept", X_vars)
+    X_data <- cbind(1,X_data)
+    colnames(X_data) <- c("intercept", X)
   }
-  # Calculate beta hat
-  beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
-  # Return beta_hat
-  return(beta_hat)
-}
-# Function that demeans the columns of Z
-demeaner <- function(N) {
-  # Create an N-by-1 column of 1s
-  i <- matrix(data = 1, nrow = N)
-  # Create the demeaning matrix
-  A <- diag(N) - (1/N) * i %*% t(i)
-  # Return A
-  return(A)
-}
-# Function to return OLS residuals
-resid_ols <- function(data, y_var, X_vars, intercept = T) {
-  # Require the 'dplyr' package
-  require(dplyr)
-  # Create the y matrix
-  y <- to_matrix(the_df = data, vars = y_var)
-  # Create the X matrix
-  X <- to_matrix(the_df = data, vars = X_vars)
-  # If 'intercept' is TRUE, then add a column of ones
-  if (intercept == T) {
-    # Bind a column of ones to X
-    X <- cbind(1, X)
-    # Name the new column "intercept"
-    colnames(X) <- c("intercept", X_vars)
-  }
-  # Calculate the sample size, n
-  n <- nrow(X)
-  # Calculate the residuals
-  resids <- (diag(n) - X %*% solve(t(X) %*% X) %*% t(X)) %*% y
-  # Return 'resids'
-  return(resids)
-}
-# Create function for r-squared, aic, and sic
-r2_ic <- function(data, y_var, X_vars, intercept = T) {
-  # Create y and X matrices
-  y <- to_matrix(data, vars = y_var)
-  X <- to_matrix(data, vars = X_vars)
-  # Add intercept column to X
-  X <- cbind(1, X)
-  # Find N and K (dimensions of X)
-  N <- nrow(X)
-  K <- ncol(X)
-  # Calculate the OLS residuals
-  e <- resid_ols(data, y_var, X_vars, intercept)
-  # Calculate sum of squared errors
-  sse <- t(e) %*% e
-  # Calculate the y_star (demeaned y)
-  y_star <- demeaner(N) %*% y
-  # Calculate r-squared values
-  r2_uc  <- 1 - sse / (t(y) %*% y)
-  r2     <- 1 - sse / (t(y_star) %*% y_star)
-  r2_adj <- 1 - (N-1) / (N-K) * (1 - r2)
-  # Calculate sic and aic
-  sic <- log(sse / N) + K / N * log(N)
-  aic <- log(sse / N) + 2 * K / N
-  # Calculate s2
-  s2 <- sse / (N - K)
-  # Create a data.frame
-  tmp_df <- data.frame(r2_uc, r2, r2_adj, sic, aic, sse, s2)
-  names(tmp_df) <- c("r2_uc", "r2", "r2_adj", "sic", "aic",
-    "sse", "s2")
-  return(tmp_df)
-}
-# Function to export a nice table
-r2_table <- function(org_df, scientific = T) {
-  # Column names for the output of r2_ic
-  r2_ic_names <- c("$R^2_\\text{uc}$", "$R^2$", "$R^2_\\text{adj}$",
-    "SIC", "AIC", "SSE", "$s^2$")
-  new_table <- org_df %>% knitr::kable(
+ 
+  
+  # Calculate beta_hat, y_hat, and residuals
+  beta_hat <- solve(t(X_data) %*% X_data) %*% t(X_data) %*% y_data
+  y_hat <- X_data %*% beta_hat
+  e <- y_data - y_hat
+  
+  # Useful
+  n <- nrow(X_data) # number of observations
+  k <- ncol(X_data) # number of independent variables
+  dof <- n - k # degrees of freedom
+  i <- rep(1,n) # column of ones for demeaning matrix
+  A <- diag(i) - (1 / n) * i %*% t(i) # demeaning matrix
+  y_star <- A %*% y_data # for SST
+  X_star <- A %*% X_data # for SSM
+  SST <- drop(t(y_star) %*% y_star)
+  SSM <- drop(t(beta_hat) %*% t(X_star) %*% X_star %*% beta_hat)
+  SSR <- drop(t(e) %*% e)
+  
+  # Measures of fit and estimated variance
+  R2uc <- drop((t(y_hat) %*% y_hat)/(t(y_data) %*% y_data)) # Uncentered R^2
+  R2 <- 1 - SSR/SST # Uncentered R^2
+  R2adj <- 1 - (n-1)/dof * (1 - R2) # Adjusted R^2
+  AIC <- log(SSR/n) + 2*k/n # AIC
+  SIC <- log(SSR/n) + k/n*log(n) # SIC
+  s2 <- SSR/dof # s^2
+  
+  # Measures of fit table
+  mof_table_df <- data.frame(R2uc, R2, R2adj, SIC, AIC, SSR, s2)
+  mof_table_col_names <- c("$R^2_\\text{uc}$", "$R^2$",
+                           "$R^2_\\text{adj}$",
+                           "SIC", "AIC", "SSR", "$s^2$")
+  mof_table <-  mof_table_df %>% knitr::kable(
     row.names = F,
-    col.names = r2_ic_names,
-    digits = 4,
-    format.args = list(scientific = scientific)
+    col.names = mof_table_col_names,
+    digits = 5,
+    format.args = list(scientific = T),
+    booktabs = T,
+    escape = F
     )
-  return(new_table)
+  
+  # Create export data frame for y, y_hat, X, and e
+  export_df <- data.frame(y_data, y_hat, e, X_data) %>% tbl_df()
+  colnames(export_df) <- c("y","y_hat","e",colnames(X_data))
+  
+  # Return
+  return(list(n=n, dof=dof, b=beta_hat, vars=export_df, R2uc=R2uc,R2=R2,
+              R2adj=R2adj, AIC=AIC, SIC=SIC, s2=s2, SST=SST, SSR=SSR,
+              mof_table=mof_table))
 }
 ```
 
