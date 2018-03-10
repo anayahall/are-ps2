@@ -16,87 +16,130 @@ options(stringsAsFactors = F)
 library(pacman)
 p_load(knitr, kableExtra, WDI, dplyr, readr, magrittr, ggplot2)
 
+# GGplot2 theme
+theme_are <- theme(
+  legend.position = "bottom",
+  panel.background = element_rect(fill = NA),
+  panel.border = element_rect(fill = NA, color = "grey75"),
+  axis.ticks = element_line(color = "grey85"),
+  panel.grid.major = element_line(color = "grey95", size = 0.2),
+  panel.grid.minor = element_line(color = "grey95", size = 0.2),
+  legend.key = element_blank())
+
 ```
 
-First, load our OLS function created in Problem Set #1.
+First, load our OLS function created in Problem Set #1. We've including a built in t-test this time around.
 
 ```{r OLS function}
-ols <- function(data, y, X, intercept = T) {
-  # Require the 'dplyr' package
-  require(dplyr)
+ols <- function(data, y_data, X_data, intercept = T) {
+  # Function setup ----
+    # Require the 'dplyr' package
+    require(dplyr)
+    # Function to convert tibble, data.frame, or tbl_df to matrix
+    to_matrix <- function(the_df, vars) {
+      # Create a matrix from variables in var
+      new_mat <- the_df %>%
+        #Select the columns given in 'vars'
+        select_(.dots = vars) %>%
+        # Convert to matrix
+        as.matrix()
+      # Return 'new_mat'
+      return(new_mat)
+    }
   
-  # Function to convert tibble, data.frame, or tbl_df to matrix
-  to_matrix <- function(the_df, vars) {
-    # Create a matrix from variables in var
-    new_mat <- the_df %>%
-      #Select the columns given in 'vars'
-      select_(.dots = vars) %>%
-      # Convert to matrix
-      as.matrix()
-    # Return 'new_mat'
-    return(new_mat)
-  }
-  
-  # Create the y matrix
-  y_data <- to_matrix (the_df = data, vars = y)
-  # Create the X matrix
-  X_data <- to_matrix (the_df = data, vars = X)
-  # If 'intercept' is TRUE, then add a column of ones
-  if (intercept == T) {
-    X_data <- cbind(1,X_data)
-    colnames(X_data) <- c("intercept", X)
-  }
+  # Create dependent and independent variable matrices ----
+    # y matrix
+    y <- to_matrix (the_df = data, vars = y_data)
+    # X matrix
+    X <- to_matrix (the_df = data, vars = X_data)
+      # If 'intercept' is TRUE, then add a column of ones
+      if (intercept == T) {
+      X <- cbind(1,X)
+      colnames(X) <- c("intercept", X)
+      }
  
+  # Calculate b, y_hat, and residuals ----
+    b <- solve(t(X) %*% X) %*% t(X) %*% y
+    y_hat <- X %*% b
+    e <- y - y_hat
   
-  # Calculate beta_hat, y_hat, and residuals
-  beta_hat <- solve(t(X_data) %*% X_data) %*% t(X_data) %*% y_data
-  y_hat <- X_data %*% beta_hat
-  e <- y_data - y_hat
+  # Useful -----
+    n <- nrow(X) # number of observations
+    k <- ncol(X) # number of independent variables
+    dof <- n - k # degrees of freedom
+    i <- rep(1,n) # column of ones for demeaning matrix
+    A <- diag(i) - (1 / n) * i %*% t(i) # demeaning matrix
+    y_star <- A %*% y # for SST
+    X_star <- A %*% X # for SSM
+    SST <- drop(t(y_star) %*% y_star)
+    SSM <- drop(t(b) %*% t(X_star) %*% X_star %*% b)
+    SSR <- drop(t(e) %*% e)
   
-  # Useful
-  n <- nrow(X_data) # number of observations
-  k <- ncol(X_data) # number of independent variables
-  dof <- n - k # degrees of freedom
-  i <- rep(1,n) # column of ones for demeaning matrix
-  A <- diag(i) - (1 / n) * i %*% t(i) # demeaning matrix
-  y_star <- A %*% y_data # for SST
-  X_star <- A %*% X_data # for SSM
-  SST <- drop(t(y_star) %*% y_star)
-  SSM <- drop(t(beta_hat) %*% t(X_star) %*% X_star %*% beta_hat)
-  SSR <- drop(t(e) %*% e)
+  # Measures of fit and estimated variance ----
+    R2uc <- drop((t(y_hat) %*% y_hat)/(t(y) %*% y)) # Uncentered R^2
+    R2 <- 1 - SSR/SST # Uncentered R^2
+    R2adj <- 1 - (n-1)/dof * (1 - R2) # Adjusted R^2
+    AIC <- log(SSR/n) + 2*k/n # AIC
+    SIC <- log(SSR/n) + k/n*log(n) # SIC
+    s2 <- SSR/dof # s^2
   
-  # Measures of fit and estimated variance
-  R2uc <- drop((t(y_hat) %*% y_hat)/(t(y_data) %*% y_data)) # Uncentered R^2
-  R2 <- 1 - SSR/SST # Uncentered R^2
-  R2adj <- 1 - (n-1)/dof * (1 - R2) # Adjusted R^2
-  AIC <- log(SSR/n) + 2*k/n # AIC
-  SIC <- log(SSR/n) + k/n*log(n) # SIC
-  s2 <- SSR/dof # s^2
-  
-  # Measures of fit table
-  mof_table_df <- data.frame(R2uc, R2, R2adj, SIC, AIC, SSR, s2)
-  mof_table_col_names <- c("$R^2_\\text{uc}$", "$R^2$",
-                           "$R^2_\\text{adj}$",
-                           "SIC", "AIC", "SSR", "$s^2$")
-  mof_table <-  mof_table_df %>% knitr::kable(
-    row.names = F,
-    col.names = mof_table_col_names,
-    digits = 5,
-    format.args = list(scientific = T),
-    booktabs = T,
-    escape = F
+  # Measures of fit table ----
+    mof_table_df <- data.frame(R2uc, R2, R2adj, SIC, AIC, SSR, s2)
+    mof_table_col_names <- c("$R^2_\\text{uc}$", "$R^2$",
+                             "$R^2_\\text{adj}$",
+                             "SIC", "AIC", "SSR", "$s^2$")
+    mof_table <-  mof_table_df %>% knitr::kable(
+      row.names = F,
+      col.names = mof_table_col_names,
+      digits = 5,
+      format.args = list(scientific = T),
+      booktabs = T,
+      escape = F
     )
   
-  # Create export data frame for y, y_hat, X, and e
-  export_df <- data.frame(y_data, y_hat, e, X_data) %>% tbl_df()
-  colnames(export_df) <- c("y","y_hat","e",colnames(X_data))
+  # t-test----
+    # Standard error
+    se <- sqrt(s2 * diag(solve(t(X) %*% X)))
+    # Vector of _t_ statistics
+    t_stats <- (b - 0) / se
+    # Calculate the p-values
+    p_values = pt(q = abs(t_stats), df = dof, lower.tail = F) * 2
+    # Nice table (data.frame) of results
+    results_ttest <- data.frame(
+      # The rows have the coef. names
+      effect = rownames(b),
+      # Estimated coefficients
+      coef = as.vector(b) %>% round(3),
+      # Standard errors
+      std_error = as.vector(se) %>% round(3),
+      # t statistics
+      t_stat = as.vector(t_stats) %>% round(3),
+      # p-values
+      p_value = as.vector(p_values) %>% round(4)
+      )
+    
+  # Data frame for exporting for y, y_hat, X, and e vectors ----
+    export_df <- data.frame(y, y_hat, e, X) %>% tbl_df()
+    colnames(export_df) <- c("y","y_hat","e",colnames(X))
   
-  # Return
-  return(list(n=n, dof=dof, b=beta_hat, vars=export_df, R2uc=R2uc,R2=R2,
-              R2adj=R2adj, AIC=AIC, SIC=SIC, s2=s2, SST=SST, SSR=SSR,
-              mof_table=mof_table))
+  # Return ----
+    return(list(n=n, dof=dof, b=b, vars=export_df, R2uc=R2uc,R2=R2,
+                R2adj=R2adj, AIC=AIC, SIC=SIC, s2=s2, SST=SST, SSR=SSR,
+                mof_table=mof_table, ttest=results_ttest))
 }
 ```
+
+We'll also need functions to do t-test and F-test for this Problem Set. Especially since our built in t-test only assumes a null hypothesis of $H_0 = 0$.
+
+```{r t-test function}
+
+```
+
+```{r F-test function}
+
+
+```
+
 
 ## Question 1:
 Read the data into R. Print out the data. Read it. Plot the series and make sure your data are read in correctly. Make sure your data are sorted by size (kwh). [Hint: Check for obvious typos in the data and if you find any fix them!]
@@ -114,9 +157,10 @@ nerlove
 ```
 
 ```{r plotseries}
-
-nerlove %>%
-  ggplot(aes(x=PL, y=TC)) + geom_point() + labs(title="Nerlove Data", x="Price of Labor", y="Total Cost")
+ggplot(nerlove, aes(x=PL, y=TC)) + 
+  geom_point() + 
+  labs(title="Nerlove Data", x="Price of Labor", y="Total Cost") + 
+  theme_are
 
 ```
 
