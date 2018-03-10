@@ -8,3 +8,4 @@ dplyr
 readr
 magrittr
 ggplot2
+bindrcpp
