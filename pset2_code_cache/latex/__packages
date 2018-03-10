@@ -1,0 +1,10 @@
+base
+pacman
+knitr
+kableExtra
+RJSONIO
+WDI
+dplyr
+readr
+magrittr
+ggplot2

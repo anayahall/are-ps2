@@ -8,6 +8,7 @@ output: pdf_document
 # Part 2: Applied: Returns to Scale in Electricity Supply
 
 ```{r Setup, include=F}
+rm(list = ls())
 # Setup
 knitr::opts_chunk$set(echo = T, cache = T)
 # Options
@@ -16,7 +17,7 @@ options(stringsAsFactors = F)
 library(pacman)
 p_load(knitr, kableExtra, WDI, dplyr, readr, magrittr, ggplot2)
 
-# GGplot2 theme
+# GGplot2 theme----
 theme_are <- theme(
   legend.position = "bottom",
   panel.background = element_rect(fill = NA),
@@ -24,11 +25,12 @@ theme_are <- theme(
   axis.ticks = element_line(color = "grey85"),
   panel.grid.major = element_line(color = "grey95", size = 0.2),
   panel.grid.minor = element_line(color = "grey95", size = 0.2),
-  legend.key = element_blank())
+  legend.key = element_blank()
+)
 
 ```
 
-First, load our OLS function created in Problem Set #1. We've including a built in t-test this time around.
+First, load our OLS function created in Problem Set #1. We're including a built in t-test this time around.
 
 ```{r OLS function}
 ols <- function(data, y_data, X_data, intercept = T) {
@@ -55,7 +57,7 @@ ols <- function(data, y_data, X_data, intercept = T) {
       # If 'intercept' is TRUE, then add a column of ones
       if (intercept == T) {
       X <- cbind(1,X)
-      colnames(X) <- c("intercept", X)
+      colnames(X) <- c("intercept", X_data)
       }
  
   # Calculate b, y_hat, and residuals ----
@@ -91,8 +93,7 @@ ols <- function(data, y_data, X_data, intercept = T) {
     mof_table <-  mof_table_df %>% knitr::kable(
       row.names = F,
       col.names = mof_table_col_names,
-      digits = 5,
-      format.args = list(scientific = T),
+      format.args = list(scientific = F, digits = 4),
       booktabs = T,
       escape = F
     )
@@ -147,7 +148,7 @@ Read the data into R. Print out the data. Read it. Plot the series and make sure
 
 ```{r read_data}
 
-nerlove <- readxl::read_excel("nerlove.xls", col_names=TRUE)
+nerlove <- readxl::read_excel("nerlove.xls", col_names=T)
 
 # Fix typo in 13th row (missing a decimal!)
 # DO THIS MORE ELEGANTLY! 
@@ -168,6 +169,35 @@ ggplot(nerlove, aes(x=PL, y=TC)) +
 Replicate regression I (page 176) in the paper. 
 
 Looks like this-ish:
-log(TC - PF) = B0 + B1(Q) + B2(Log(PL)0-log(PF)) + B2(log(PK)-log(PF))
+$log(TC) - log(PF) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(PL)-log(PF)\Bigr) + \beta_3\Bigl(log(PK)-log(PF)\Bigr)$
+
+
+Where:  
+$\beta_1 = \frac{1}{r}$, $\beta_2 = \frac{a_L}{r}$, $\beta_3 = \frac{a_K}{r}\\$
+P$_L$ = wage rate,P$_K$ = "price" of capital, P$_F$ = price of fuel   
+TC = total production cost, Q = output (measured in kWh)   
+
+```{r Regression I}
+# Create log variables
+nerlove %<>% mutate(
+  TClog = log10(TC),
+  Qlog = log10(Q),
+  PLlog = log10(PL),
+  PKlog = log10(PK),
+  PFlog = log10(PF)
+)
+
+# Create PF scaled variables
+nerlove %<>% mutate(
+  TCscaled = TClog - PFlog,
+  PLscaled = PLlog - PFlog,
+  PKscaled = PKlog - PFlog
+)
+
+reg_I <- ols(nerlove,"TClog",c("Qlog","PLscaled","PKscaled"),T)
+
+reg_I$ttest
+reg_I$mof_table
+```
 
 
