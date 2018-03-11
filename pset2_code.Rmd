@@ -99,7 +99,7 @@ ols <- function(data, y_data, X_data, intercept = T, H0 = 0, two_tail = T, alpha
     )
   
   # t-test----
-    ttest <- function(H0 = H0, two_tail = two_tail, alpha = alpha){}
+    ttest <- function(H0 = H0, two_tail = two_tail, alpha = alpha){
     # Standard error
     se <- as.vector(sqrt(s2 * diag(solve(t(X) %*% X))))
     # Vector of _t_ statistics
@@ -134,6 +134,7 @@ ols <- function(data, y_data, X_data, intercept = T, H0 = 0, two_tail = T, alpha
       format.args = list(scientific = F),
       escape = F
     )
+    }
   # Data frame for exporting for y, y_hat, X, and e vectors ----
     export_df <- data.frame(y, y_hat, e, X) %>% tbl_df()
     colnames(export_df) <- c("y","y_hat","e",colnames(X))
