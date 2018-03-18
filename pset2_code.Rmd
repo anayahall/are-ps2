@@ -205,10 +205,15 @@ F_test <- function(data, y_var, X_vars) {
 ```{r read_in_data}
 
 nerlove <- readxl::read_excel("nerlove.xls", col_names=T)
+summary(nerlove)
 
 # Fix typo in 13th row (missing a decimal!)
 # DO THIS MORE ELEGANTLY! 
 nerlove[13, "PL"] <- 1.81
+
+# nerlove %>% 
+#   filter(PL > 100) %>%
+#     mutate(PL = PL/100)
 
 nerlove %>% arrange(Q)
 
