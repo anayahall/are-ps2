@@ -9,3 +9,4 @@ readr
 magrittr
 ggplot2
 bindrcpp
+readxl
