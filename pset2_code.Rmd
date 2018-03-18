@@ -146,7 +146,7 @@ ols <- function(data, y_data, X_data, intercept = T, H0 = 0, two_tail = T, alpha
 }
 ```
 
-We'll also need a function to an F-test for this Problem Set.
+We'll also need a function to do an F-test for this Problem Set.
 
 ```{r F-test function}
 
@@ -195,7 +195,7 @@ F_test <- function(data, y_var, X_vars) {
 
 
 ## Question 1:
-Read the data into R. Print out the data. Read it. Plot the series and make sure your data are read in correctly. Make sure your data are sorted by size (kwh). [Hint: Check for obvious typos in the data and if you find any fix them!]
+**Read the data into R. Inspect it. Sort by size (Q (kwh)).** 
 
 
 ```{r read_in_data}
@@ -206,9 +206,12 @@ nerlove <- readxl::read_excel("nerlove.xls", col_names=T)
 # DO THIS MORE ELEGANTLY! 
 nerlove[13, "PL"] <- 1.81
 
-nerlove
+nerlove %>% arrange(Q)
+
+head(nerlove)
 ```
 
+Plot the series and make sure your data are read in correctly. 
 ```{r plotseries}
 ggplot(nerlove, aes(x=PL, y=TC)) + 
   geom_point() + 
@@ -219,18 +222,30 @@ ggplot(nerlove, aes(x=PL, y=TC)) +
 ```
 
 ## Question 2:
-Replicate regression I (page 176) in the paper. 
+**Replicate regression I (page 176) in the paper.**
 
-Looks like this-ish:
+Regression I:
+
 $log(TC) - log(P_F) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(P_L)-log(P_F)\Bigr) + \beta_3\Bigl(log(P_K)-log(P_F)\Bigr)$
 
+Equivalent to:
+
+$log(\frac{TC}{P_F}) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(\frac{P_L}{P_F})\Bigr) + \beta_3\Bigl(log(\frac{P_K}{P_F}\Bigr)$
 
 Where:  
-$\beta_1 = \frac{1}{r}$, $\beta_2 = \frac{a_L}{r}$, $\beta_3 = \frac{a_K}{r}$
-$P_L$ = wage rate,$P_K$ = "price" of capital, $P_F$ = price of fuel   
-TC = total production cost, Q = output (measured in kWh)   
+$TC$ = total production cost, 
+$P_L$ = wage rate,
+$P_K$ = "price" of capital, 
+$P_F$ = price of fuel   
+$Q$ = output (measured in kWh)  
 
-```{r Regression I}
+In generalized Cobb-Douglas form:
+$\beta_1 = \frac{1}{r}$, 
+$\beta_2 = \frac{a_L}{r}$, 
+$\beta_3 = \frac{a_K}{r}$
+
+Prepare variables for Regression I.
+```{r RegressionI_prep}
 # Create log variables
 nerlove %<>% mutate(
   TClog = log10(TC),
@@ -246,8 +261,18 @@ nerlove %<>% mutate(
   PLscaled = PLlog - PFlog,
   PKscaled = PKlog - PFlog
 )
+```
 
-reg_I <- ols(data = nerlove,y_data = "TClog",
+Variable names:
+$log(\frac{TC}{P_F})$ = "TCscaled"
+$log(\frac{P_L}{P_F}$ = "PLscaled"
+$log(\frac{P_K}{P_F}$ = "PKscaled"
+
+```{r RegressionI}
+
+# Regression I: 
+# dep var = (log costs - log fuel price) = TCscaled
+reg_I <- ols(data = nerlove,y_data = "TCscaled",
              X_data = c("Qlog","PLscaled","PKscaled"),
              intercept = T, H0 = 0, alpha = 0.05)
 
@@ -255,5 +280,49 @@ reg_I$ttest
 reg_I$mof_table
 
 ```
+Coefficients are pretty close to those in the paper. $R^2$ matches! 
 
 
+## Question 3:
+**Conduct the hypothesis test using constant returns to scale ($\beta_1$ = 1) as your null hypothesis.**
+
+```{r}
+
+# Re-run regression with null hypothesis H0 = 1
+reg_I <- ols(data = nerlove,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"),
+             intercept = T, H0 = 1, alpha = 0.05)
+
+reg_I$ttest
+```
+**What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?**
+
+*The p-value is 0.000.  We estimate that returns to scale is.........*
+
+## Question 4:
+**4. Plot the residuals against output.**
+
+Residuals
+```{r}
+
+ggplot(reg_I$vars, aes(y=e, x=Qlog)) + geom_point() + labs(title="Regression I: Residuals plotted by Output", x="Output (log(Q))", y="Residuals")
+
+```
+
+**What do you notice? What does this potentially tell you from an economic perspective?**
+
+**Compute the correlation coefficient of the residuals with output for the entire sample? What does this tell you?**
+
+
+## Question 5:
+**Divide your sample into 5 subgroups of 29 firms each according to the level of output. Estimate the regression model again for each group separately.**
+
+```{r split_sample}
+
+```
+
+```{r Regression II}
+
+```
+
+**Can you replicate Equations IIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?**
