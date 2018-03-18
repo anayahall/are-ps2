@@ -2,6 +2,8 @@
 title: 'Problem Set #2'
 author: "Anaya Hall & Christian Miller"
 output: pdf_document
+fontsize: 11pt
+geometry: margin=.75in 
 ---
 
 # Part 1: Theory
@@ -277,9 +279,9 @@ Variable names:
 
 $log(\frac{TC}{P_F})$ = "TCscaled"
 
-$log(\frac{P_L}{P_F}$ = "PLscaled"
+$log(\frac{P_L}{P_F})$ = "PLscaled"
 
-$log(\frac{P_K}{P_F}$ = "PKscaled"
+$log(\frac{P_K}{P_F})$ = "PKscaled"
 
 ```{r RegressionI}
 
