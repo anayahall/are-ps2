@@ -400,30 +400,64 @@ reg_IIIE$ttest
 
 # create group categorical var
 for (i in 1:5) {
-  d[[i]] %<>% mutate(g=i)
+  d[[i]] %<>% mutate(gvar=i)
 }
 
 # unsplit
 df <- rbind(d[[1]], d[[2]], d[[3]], d[[4]], d[[5]])
 
 # create dummies
-for (i in 1:5) {mutate(df,
-  gl = ifelse(g==i, 1, 0))
-}
+df %<>%
+    mutate(
+      g1 = ifelse(gvar==1, 1, 0),
+      g2 = ifelse(gvar==2, 1, 0),
+      g3 = ifelse(gvar==3, 1, 0),
+      g4 = ifelse(gvar==4, 1, 0),
+      g5 = ifelse(gvar==5, 1, 0))
+  
+df %<>% select(-gvar)
+
+# interact with output variable
+df %<>%
+    mutate(
+      lQ_1 = Qlog*g1,
+      lQ_2 = Qlog*g2,
+      lQ_3 = Qlog*g3,
+      lQ_4 = Qlog*g4,
+      lQ_5 = Qlog*g5)
 
 ```
 
 **Run a model, letting the intercept and slope coefficient on output differ across plants, but let the remainder of the coefficients be pooled across plants.**
 
+```{r OLS_dummies}
 
-```{r dummymodel}
+# I'm not sure this is the right model... but I'm gettin similar coeffs!
+
+
+
+reg_IV <- ols(data = df, y_data = "TCscaled",
+             X_data = c("lQ_1", "lQ_2", "lQ_3", "lQ_4", "lQ_5", "g1",
+                        "g2", "g3", "g4", "g5","PLscaled","PKscaled"),
+             intercept = F, H0 = 1, alpha = 0.05)
+
+# Can also omit one of the dummie vars (g) and include an intercept >> get the same coefs
+reg_IV$ttest
+
 ```
-
+Note: Numbers 1 through 5 correspond to A through E
 
 **Are there any noticeable changes in returns to scale from the previous part?**
 
+*yes....*
+
 ## Question 7:
 **Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?**
+
+``` {r joint_test}
+
+```
+
 
 ## Question 8:
 **To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including $ln(y)^2$ as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.**
