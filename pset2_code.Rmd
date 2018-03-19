@@ -398,6 +398,19 @@ reg_IIIE$ttest
 
 ``` {r createdummies}
 
+# create group categorical var
+for (i in 1:5) {
+  d[[i]] %<>% mutate(g=i)
+}
+
+# unsplit
+df <- rbind(d[[1]], d[[2]], d[[3]], d[[4]], d[[5]])
+
+# create dummies
+for (i in 1:5) {mutate(df,
+  gl = ifelse(g==i, 1, 0))
+}
+
 ```
 
 **Run a model, letting the intercept and slope coefficient on output differ across plants, but let the remainder of the coefficients be pooled across plants.**
