@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = T, cache = T)
 options(stringsAsFactors = F)
 # Packages
 library(pacman)
-p_load(knitr, kableExtra, WDI, dplyr, readr, magrittr, ggplot2, readxl)
+p_load(knitr, kableExtra, WDI, dplyr, readr, magrittr, ggplot2, readxl, smartypants)
 
 # GGplot2 theme----
 theme_are <- theme(
@@ -174,18 +174,17 @@ F_test <- function(data, y_var, X_vars) {
 
   # Estimate coefficients
   b <- b_ols(data, y_var, X_vars)
-  # Calculate OLS residuals
-  e <- y - X %*% b
-  # Calculate s^2
-  s2 <- (t(e) %*% e) / (n-k)
-  # Force s2 to numeric
-  s2 %<>% as.numeric()
+  # Retrieve OLS residuals
+  e <- b$vars$e
+  # Retrieve s^2
+  s2 <- b$s2 %<>% as.numeric()
+
 
   # Create the inner matrix R(X'X)^(-1)R'
   RXXR <- R %*% solve(t(X) %*% X) %*% t(R)
   # Calculate the F stat
   f_stat <- t(R %*% b) %*% solve(RXXR) %*% (R %*% b) / J / s2
-  # Calculate the p-value
+  # Calculate the p-value;; why normal and not chi^2
   p_value <- pf(q = f_stat, df1 = J, df2 = n-k, lower.tail = F)
   # Create a data.frame of the f stat. and p-value
   results <- data.frame(
@@ -221,11 +220,22 @@ nerlove %>% arrange(Q)
 
 Plot the series and make sure your data are read in correctly. 
 ```{r plotseries, highlight=T}
+ggplot(nerlove, aes(x=Q, y=TC)) + 
+  geom_point() + 
+  labs(title="Nerlove Data", x="Output (kWh)", y="Total Cost")
+
 ggplot(nerlove, aes(x=PL, y=TC)) + 
   geom_point() + 
-  labs(title="Nerlove Data", x="Price of Labor", y="Total Cost")
+  labs(title="Nerlove Data", x="Price of Labor ($)", y="Total Cost")
 
-### plot rest of independent vars too.
+ggplot(nerlove, aes(x=PK, y=TC)) + 
+  geom_point() + 
+  labs(title="Nerlove Data", x="Price of Capital ($)", y="Total Cost")
+
+ggplot(nerlove, aes(x=PF, y=TC)) + 
+  geom_point() + 
+  labs(title="Nerlove Data", x="Price of Fuel ($)", y="Total Cost")
+
 ```
 
 ## Question 2:
@@ -237,7 +247,7 @@ $log(TC) - log(P_F) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(P_L)-log(P_F)\Bigr) 
 
 Equivalent to:
 
-$log(\frac{TC}{P_F}) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(\frac{P_L}{P_F})\Bigr) + \beta_3\Bigl(log(\frac{P_K}{P_F}\Bigr)$
+$log(\frac{TC}{P_F}) = \beta_0 + \beta_1Q + \beta_2log(\frac{P_L}{P_F}) + \beta_3log(\frac{P_K}{P_F})$
 
 
 Where:  
@@ -265,11 +275,11 @@ Prepare variables for Regression I.
 ```{r RegressionI_prep}
 # Create log variables
 nerlove %<>% mutate(
-  TClog = log10(TC),
-  Qlog = log10(Q),
-  PLlog = log10(PL),
-  PKlog = log10(PK),
-  PFlog = log10(PF)
+  TClog = log(TC),
+  Qlog = log(Q),
+  PLlog = log(PL),
+  PKlog = log(PK),
+  PFlog = log(PF)
 )
 
 # Create PF scaled variables
@@ -320,7 +330,7 @@ reg_I$ttest
 
 **What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?**
 
-*The p-value is 0.000.  We estimate that returns to scale is.........*
+The p-value is 0.000. The point estimate of returns to scale is $\frac{1}{\beta}=r =$ `r 1/reg_I$b[2]`, hence returns to scale is increasing.
 
 ## Question 4:
 **Plot residuals against output.**
@@ -333,13 +343,18 @@ ggplot(reg_I$vars, aes(y=e, x=Qlog)) + geom_point() + labs(title="Regression I: 
 
 **What do you notice? What does this potentially tell you from an economic perspective?**
 
-*Evidence of heteroskedasticity. We may want to rethink our specification!*
+*Evidence of heteroskedasticity: residuals seem to track the log output through parabola. We may want to rethink our specification!*
 
 
 
 **Compute the correlation coefficient of the residuals with output for the entire sample? What does this tell you?**
 
-Correlation coefficient of residuals with output:    .... what does this mean?
+```{r corr coeff}
+# R = cov(xy)/var(x)var(y)
+R_I <- (cov(x=reg_I$vars$e, y=reg_I$vars$Qlog)/(var(reg_I$vars$e)*var(reg_I$vars$Qlog))) %>% signif(3) %>% as.character()
+R_I
+```
+The correlation coefficient is extremely small: `r R_I`.
 
 ## Question 5:
 **Divide your sample into 5 subgroups of 29 firms each according to the level of output. Estimate the regression model again for each group separately.**
@@ -383,12 +398,19 @@ reg_IIIE <- ols(data = d$`5`,y_data = "TCscaled",
 reg_IIIE$ttest
 
 
+
+
 ## May want to clean this up and run as for loop???
 ```
 
 **Can you replicate Equations IIIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?**
-
-[need to answer this still!]
+Regression    | Returns to Scale
+------------- | -------------
+IIIA          | `r 1/ reg_IIIA$b[2]`
+IIIB          | `r 1/ reg_IIIB$b[2]`
+IIIC          | `r 1/ reg_IIIC$b[2]`
+IIID          | `r 1/ reg_IIID$b[2]`
+IIIE          | `r 1/ reg_IIIE$b[2]`
 
 *Coefficients roughly match the results of the paper!*
 
