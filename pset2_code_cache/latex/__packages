@@ -10,3 +10,4 @@ magrittr
 ggplot2
 readxl
 bindrcpp
+BiocInstaller
