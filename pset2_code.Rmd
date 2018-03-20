@@ -154,6 +154,18 @@ We'll also need a function to do an F-test for this Problem Set.
 
 ```{r F-test function}
 
+to_matrix <- function(the_df, vars) {
+      # Create a matrix from variables in var
+      new_mat <- the_df %>%
+        #Select the columns given in 'vars'
+        select_(.dots = vars) %>%
+        # Convert to matrix
+        as.matrix()
+      # Return 'new_mat'
+      return(new_mat)
+    }
+
+
 # Joint test function (from Ed's notes). Could also write a more complex functions that takes R and r. 
 F_test <- function(data, y_var, X_vars) {
   # Turn data into matrices
@@ -173,17 +185,16 @@ F_test <- function(data, y_var, X_vars) {
   R <- cbind(0, diag(J))
 
   # Estimate coefficients
-  b <- b_ols(data, y_var, X_vars)
+  b <- ols(data, y_var, X_vars)
   # Retrieve OLS residuals
   e <- b$vars$e
   # Retrieve s^2
   s2 <- b$s2 %<>% as.numeric()
 
-
   # Create the inner matrix R(X'X)^(-1)R'
   RXXR <- R %*% solve(t(X) %*% X) %*% t(R)
   # Calculate the F stat
-  f_stat <- t(R %*% b) %*% solve(RXXR) %*% (R %*% b) / J / s2
+  f_stat <- t(R %*% b$b) %*% solve(RXXR) %*% (R %*% b$b) / J / s2
   # Calculate the p-value;; why normal and not chi^2
   p_value <- pf(q = f_stat, df1 = J, df2 = n-k, lower.tail = F)
   # Create a data.frame of the f stat. and p-value
@@ -479,17 +490,38 @@ reg_IV$mof_table
 ## Question 7:
 **Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?**
 
-do we use this formula?? or do a real F-test?
+Regression I is unrestricted model, Regression IV is restricted model
 
-$F= \frac{(SSR_R - SSR_U)/J}{SSR_U/(n-k)}$
+$F = \frac{(SSR_R - SSR_U)/J}{SSR_U/(n-k)}$
 
 ``` {r joint_test}
 
+ssr_u <- reg_I$SSR
+dof <- reg_I$dof
+
+ssr_r <- reg_IV$SSR
+j <- nrow(reg_IV$b)
+
+f_statistic <- ((ssr_r - ssr_u) / j) / (ssr_u / dof)
+f_statistic
+
+F_test(df, "TCscaled", c("lQ_A", "lQ_B", "lQ_C", "lQ_D", "lQ_E", "PLscaled","PKscaled", "g1", "g2", "g3", "g4"))
 
 ```
-
+*blerrrrrg- these don't match.... I'm not sure which is correct though....*
 
 ## Question 8:
 **To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including $ln(y)^2$ as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.**
 
 
+``` {r nonlinearspec}
+
+df %<>% mutate(Qlog_sq = (Qlog)^2)
+
+reg_nl <- ols(data = df, y_data = "TCscaled",
+             X_data = c("Qlog","Qlog_sq", "PLscaled","PKscaled"),
+             intercept = T, H0 = 0, alpha = 0.05)
+
+reg_nl$ttest
+
+```
