@@ -479,8 +479,11 @@ reg_IV$mof_table
 ## Question 7:
 **Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?**
 
-``` {r joint_test}
+do we use this formula?? or do a real F-test?
 
+$F= \frac{(SSR_R - SSR_U)/J}{SSR_U/(n-k)}$
+
+``` {r joint_test}
 
 
 ```
