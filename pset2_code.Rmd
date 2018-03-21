@@ -9,7 +9,7 @@ geometry: margin=.75in
 # Part 1: Theory
 (for practice only)
 
-# Part 2: Applied - Returns to Scale in Electricity Supply
+# Part 2: Applied - Returns to Scale (RTS) in Electricity Supply
 
 ```{r Setup, include=F}
 rm(list = ls())
@@ -327,7 +327,7 @@ reg_I$mof_table
 
 
 ## Question 3:
-**Conduct the hypothesis test using constant returns to scale ($\beta_1$ = 1) as your null hypothesis.**
+**Conduct the hypothesis test using constant returns to scale, ($\beta_1$ = 1), as your null hypothesis.**
 
 ```{r null1}
 
@@ -340,9 +340,9 @@ reg_I$ttest
 ```
 
 
-**What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?**
+**What is the p- value associated with you test statistic? What is your point estimate of RTS? Constant? Increasing? Decreasing?**
 
-*The p-value is 0.000. The point estimate of returns to scale is $\frac{1}{\beta_{1}}=r =$ `r round(1/reg_I$b[2],4)`, hence returns to scale is increasing.*
+*The p-value is 0.000. The point estimate of RTS is $\frac{1}{\beta_{1}}=r =$ `r round(1/reg_I$b[2],4)`, hence returns to scale is increasing.*
 
 ## Question 4:
 **Plot residuals against output.**
@@ -384,7 +384,7 @@ Now we have a list, d, with five dataframes '1' through '5' for our five subgrou
 
 **Can you replicate Equations IIIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?**
 
-We're going to run five separate regressions and display the coefficients on $ln(y)$ and the corresponding returns to scale. *Regression IIIA code as an example below.
+We're going to run five separate regressions and display the coefficients on $ln(y)$ and the corresponding RTS. *Regression IIIA code as an example below.
 
 ```{r Regression IIIA}
 # Regression IIIA
@@ -430,7 +430,7 @@ reg_III_table <- reg_III_df %>% knitr::kable(
 reg_III_table
 ```
 
-*Coefficients roughly match the results of the paper! As the size (output) of the firms get larger they see decreasing, increasing returns to scale. The largest bucket even sees decreasing returns to scale.*
+*Coefficients roughly match the results of the paper! As the size (output) of the firms get larger they see decreasing, increasing returns to scale. The largest bucket even sees decreasing RTS.*
 \newpage
 
 ## Question 6: 
@@ -538,7 +538,7 @@ f_test
 ## Question 8:
 **To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including $ln(y)^2$ as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.**
 
-It follows that returns to scale (r)  $= \frac{1}{\alpha + \beta ln(y)}$, where $\alpha$ is the cofficient on $ln(y)$ and $\beta$ is the coefficient on $ln(y)^2$ in the regression below.
+It follows that returns to scale, r,  $= \frac{1}{\alpha + \beta ln(y)}$, where $\alpha$ is the cofficient on $ln(y)$ and $\beta$ is the coefficient on $ln(y)^2$ in the regression below.
 \bigbreak
 
 ``` {r nonlinearspec}
@@ -551,7 +551,7 @@ reg_nl <- ols(data = df, y_data = "TCscaled",
 reg_nl$ttest
 ```
 
-We're going to save these results and first plot our calculated returns to scale variable against log output to see if there is a trend.
+We're going to save these results and first plot our calculated RTS variable against log output to see if there is a trend.
 
 ```{r nonlinear2}
 # Calculated RTS
@@ -562,7 +562,7 @@ ggplot(df, aes(x=Qlog, y=rts_nl)) +
   labs(title="Decreasing Returns to Scale?", x="Log Output", y="Calculated RTS")
 ```
 
-It would seem that our returns to scale decreases as output increases. Whether this is statisically significant is the question. We'll run a regression of our calculated returns to scale on the output and it's square; then, we'll run our F-test function comparing this function to just the mean of RTS. This will adquately measure for joint significance.
+It would seem that our RTS decreases as output increases. Whether this is statisically significant is the question. We'll run a regression of our calculated RTS on the output and it's square; then, we'll run our F-test function comparing this function to just the mean of RTS. This will adquately measure for joint significance.
 \bigbreak
 
 ```{r nonlinear3}
@@ -576,4 +576,4 @@ reg_nl2_f <- F_test(data = df, y_var = "rts_nl", X_vars = c("Qlog","Qlog_sq"))
 F_p <- reg_nl2_f[2] %>% signif(4) %>% as.character()
 ```
 
-*Here, it would seem that for every one percent increase of output for firms, we see a `r round(reg_nl2$b[2]/100,4)` unit decrease in the firms' returns to scale; and the output and its square are independently significant (notwithstanding the robust variance issue). Also, the p-value on our F-test is `r F_p` which tells us that output (and its square) is jointly, statistically significant on returns to scale.*
+*Here, it would seem that for every one percent increase of output for firms, we see a `r round(reg_nl2$b[2]/100,4)` unit decrease in the firms' RTS; and the output and its square are independently significant (notwithstanding the robust variance issue). Also, the p-value on our F-test is `r F_p` which tells us that output (and its square) is jointly, statistically significant on RTS.*
