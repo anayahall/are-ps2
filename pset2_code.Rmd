@@ -14,7 +14,7 @@ geometry: margin=.75in
 ```{r Setup, include=F}
 rm(list = ls())
 # Setup
-knitr::opts_chunk$set(echo = T, cache = T)
+knitr::opts_chunk$set(echo = T, cache = F)
 # Options
 options(stringsAsFactors = F)
 # Packages
@@ -573,6 +573,7 @@ reg_nl2 <- ols(data = df, y_data = "rts_nl",
              intercept = T, H0 = 0, alpha = 0.05)
 
 reg_nl2$ttest
+
 ```
 
 Here, it would seem that for every one percent increase of output for firms, we see a `r reg_nl2$b[2]/100` decrease in the firms returns to scale. The results is statistically significant, though, we did not take the robust variance of the original paper throughout, so I don't know how much we can rely on that.
