@@ -1,5 +1,5 @@
 ---
-title: 'Problem Set #2'
+title: 'ARE 212, Problem Set #2'
 author: "Anaya Hall & Christian Miller"
 output: pdf_document
 fontsize: 11pt
@@ -14,7 +14,7 @@ geometry: margin=.75in
 ```{r Setup, include=F}
 rm(list = ls())
 # Setup
-knitr::opts_chunk$set(echo = T, cache = F)
+knitr::opts_chunk$set(echo = T)
 # Options
 options(stringsAsFactors = F)
 # Packages
@@ -38,21 +38,23 @@ theme_are <- theme(
 First, load our OLS function created in Problem Set #1. We're including a built in t-test this time around.
 
 ```{r OLS function}
+
+# Function to convert tibble, data.frame, or tbl_df to matrix
+to_matrix <- function(the_df, vars) {
+  # Create a matrix from variables in var
+  new_mat <- the_df %>%
+    #Select the columns given in 'vars'
+    select_(.dots = vars) %>%
+    # Convert to matrix
+    as.matrix()
+  # Return 'new_mat'
+  return(new_mat)
+}
+
 ols <- function(data, y_data, X_data, intercept = T, H0 = 0, two_tail = T, alpha = 0.05) {
   # Function setup ----
     # Require the 'dplyr' package
     require(dplyr)
-    # Function to convert tibble, data.frame, or tbl_df to matrix
-    to_matrix <- function(the_df, vars) {
-      # Create a matrix from variables in var
-      new_mat <- the_df %>%
-        #Select the columns given in 'vars'
-        select_(.dots = vars) %>%
-        # Convert to matrix
-        as.matrix()
-      # Return 'new_mat'
-      return(new_mat)
-    }
   
   # Create dependent and independent variable matrices ----
     # y matrix
@@ -149,24 +151,15 @@ ols <- function(data, y_data, X_data, intercept = T, H0 = 0, two_tail = T, alpha
                 mof_table=mof_table, ttest=ttest_table))
 }
 ```
+\newpage
 
 We'll also need a function to do an F-test for this Problem Set.
 
 ```{r F-test function}
 
-to_matrix <- function(the_df, vars) {
-      # Create a matrix from variables in var
-      new_mat <- the_df %>%
-        #Select the columns given in 'vars'
-        select_(.dots = vars) %>%
-        # Convert to matrix
-        as.matrix()
-      # Return 'new_mat'
-      return(new_mat)
-    }
+# Joint test function (from Ed's notes). 
+# Could also write a more complex functions that takes R and r.
 
-
-# Joint test function (from Ed's notes). Could also write a more complex functions that takes R and r. 
 F_test <- function(data, y_var, X_vars) {
   # Turn data into matrices
   y <- to_matrix(data, y_var)
@@ -195,7 +188,7 @@ F_test <- function(data, y_var, X_vars) {
   RXXR <- R %*% solve(t(X) %*% X) %*% t(R)
   # Calculate the F stat
   f_stat <- t(R %*% b$b) %*% solve(RXXR) %*% (R %*% b$b) / J / s2
-  # Calculate the p-value;; why normal and not chi^2
+  # Calculate the p-value
   p_value <- pf(q = f_stat, df1 = J, df2 = n-k, lower.tail = F)
   # Create a data.frame of the f stat. and p-value
   results <- data.frame(
@@ -206,48 +199,56 @@ F_test <- function(data, y_var, X_vars) {
 }
 
 ```
-
+\newpage
 
 ## Question 1:
 **Read the data into R. Inspect it. Sort by size (Q (kwh)).** 
-
 
 ```{r read_in_data}
 
 nerlove <- readxl::read_excel("nerlove.xls", col_names=T)
 summary(nerlove)
+```
+*The max on the wage rate should not be that high: we must have an error in the data!*
 
+```{r fix error}
 # Fix typo in 13th row (missing a decimal!)
-# DO THIS MORE ELEGANTLY! 
 nerlove[13, "PL"] <- 1.81
-
-# nerlove %>% 
-#   filter(PL > 100) %>%
-#     mutate(PL = PL/100)
 
 nerlove %>% arrange(Q)
 
 ```
+\newpage
 
-Plot the series and make sure your data are read in correctly. 
-```{r plotseries, highlight=T}
+**Plot the series and make sure your data are read in correctly.**
+
+```{r plotseries1, echo=F}
 ggplot(nerlove, aes(x=Q, y=TC)) + 
   geom_point() + 
   labs(title="Nerlove Data", x="Output (kWh)", y="Total Cost")
+```
 
+```{r plotseries2, echo=F}
 ggplot(nerlove, aes(x=PL, y=TC)) + 
   geom_point() + 
   labs(title="Nerlove Data", x="Price of Labor ($)", y="Total Cost")
+```
 
+```{r plotseries3, echo=F}
 ggplot(nerlove, aes(x=PK, y=TC)) + 
   geom_point() + 
   labs(title="Nerlove Data", x="Price of Capital ($)", y="Total Cost")
+```
 
+```{r plotseries4, echo=F}
 ggplot(nerlove, aes(x=PF, y=TC)) + 
   geom_point() + 
   labs(title="Nerlove Data", x="Price of Fuel ($)", y="Total Cost")
 
 ```
+
+*All seems well! Notably, the total cost trends well with the output while the price on labor, fuel, and capital all seem to be fairly random. We'll explore the former relationship more.*
+\newpage
 
 ## Question 2:
 **Replicate regression I (page 176) in the paper.**
@@ -255,11 +256,12 @@ ggplot(nerlove, aes(x=PF, y=TC)) +
 Regression I:
 
 $log(TC) - log(P_F) = \beta_0 + \beta_1Q + \beta_2\Bigl(log(P_L)-log(P_F)\Bigr) + \beta_3\Bigl(log(P_K)-log(P_F)\Bigr)$
+\bigbreak
 
 Equivalent to:
 
 $log(\frac{TC}{P_F}) = \beta_0 + \beta_1Q + \beta_2log(\frac{P_L}{P_F}) + \beta_3log(\frac{P_K}{P_F})$
-
+\bigbreak
 
 Where:  
 $TC$ = total production cost,
@@ -271,8 +273,7 @@ $P_K$ = "price" of capital,
 $P_F$ = price of fuel,
 
 $Q$ = output (measured in kWh)  
-
-
+\bigbreak
 
 In generalized Cobb-Douglas form:
 
@@ -308,7 +309,7 @@ $log(\frac{TC}{P_F})$ = "TCscaled"
 $log(\frac{P_L}{P_F})$ = "PLscaled"
 
 $log(\frac{P_K}{P_F})$ = "PKscaled"
-
+\bigbreak
 ```{r RegressionI}
 
 # Regression I: 
@@ -341,20 +342,23 @@ reg_I$ttest
 
 **What is the p- value associated with you test statistic? What is your point estimate of returns to scale? Constant? Increasing? Decreasing?**
 
-*The p-value is 0.000. The point estimate of returns to scale is $\frac{1}{\beta}=r =$ `r 1/reg_I$b[2]`, hence returns to scale is increasing.*
+*The p-value is 0.000. The point estimate of returns to scale is $\frac{1}{\beta_{1}}=r =$ `r round(1/reg_I$b[2],4)`, hence returns to scale is increasing.*
 
 ## Question 4:
 **Plot residuals against output.**
 
-```{r plotresid}
+```{r plotresid, echo = F}
 
-ggplot(reg_I$vars, aes(y=e, x=Qlog)) + geom_point() + labs(title="Regression I: Residuals against Output", x="Output (log(Q))", y="Residuals")
+ggplot(reg_I$vars, aes(y=e, x=Qlog)) + 
+  geom_point() + 
+  labs(title="Regression I: Residuals against Output", 
+       x="Output (log(Q))", y="Residuals")
 
 ```
 
 **What do you notice? What does this potentially tell you from an economic perspective?**
 
-*Evidence of heteroskedasticity: residuals seem to track the log output through parabola. We may want to rethink our specification!*
+*Evidence of heteroskedasticity: residuals seem to track the log output through parabola (or some general nonlinear fashion). We may want to rethink our specification!*
 
 
 
@@ -362,9 +366,11 @@ ggplot(reg_I$vars, aes(y=e, x=Qlog)) + geom_point() + labs(title="Regression I: 
 
 ```{r corr coeff}
 # R = cov(xy)/var(x)var(y)
-R_I <- (cov(x=reg_I$vars$e, y=reg_I$vars$Qlog)/(var(reg_I$vars$e)*var(reg_I$vars$Qlog))) %>% signif(3) %>% as.character()
+R_I <- (cov(x=reg_I$vars$e, y=reg_I$vars$Qlog)/(var(reg_I$vars$e)*var(reg_I$vars$Qlog))) %>% 
+  signif(3) %>% as.character()
 ```
-The correlation coefficient is extremely small: `r R_I`. This tells us that, conversely, there is very little correlation between the output of the firm and the undetermined part of the model. This supports our strict exogeneity assumption.
+*The correlation coefficient is extremely small: `r R_I`. This tells us that, conversely, there is very little correlation between the output of the firm and the undetermined part of the model. This supports our strict exogeneity assumption.*
+\newpage
 
 ## Question 5:
 **Divide your sample into 5 subgroups of 29 firms each according to the level of output. Estimate the regression model again for each group separately.**
@@ -372,75 +378,68 @@ The correlation coefficient is extremely small: `r R_I`. This tells us that, con
 ```{r split_sample}
 # Divide sample into 5 subgroups
 d <- split(nerlove,rep(1:5,each=29))
-
-# Now we have a list, d, with five dataframes '1' through '5' for our five subgroups.
 ```
 
-```{r Regression III}
-# Regression IIIA
-reg_IIIA <- ols(data = d$`1`,y_data = "TCscaled",
-             X_data = c("Qlog","PLscaled","PKscaled"),
-             intercept = T, H0 = 1, alpha = 0.05)
-reg_IIIA$ttest
-
-# Regression IIIB
-reg_IIIB <- ols(data = d$`2`,y_data = "TCscaled",
-             X_data = c("Qlog","PLscaled","PKscaled"),
-             intercept = T, H0 = 1, alpha = 0.05)
-reg_IIIB$ttest
-
-# Regression IIIC
-reg_IIIC <- ols(data = d$`3`,y_data = "TCscaled",
-             X_data = c("Qlog","PLscaled","PKscaled"),
-             intercept = T, H0 = 1, alpha = 0.05)
-reg_IIIC$ttest
-
-# Regression IIID
-reg_IIID <- ols(data = d$`4`,y_data = "TCscaled",
-             X_data = c("Qlog","PLscaled","PKscaled"),
-             intercept = T, H0 = 1, alpha = 0.05)
-reg_IIID$ttest
-
-# Regression IIIE
-reg_IIIE <- ols(data = d$`5`,y_data = "TCscaled",
-             X_data = c("Qlog","PLscaled","PKscaled"),
-             intercept = T, H0 = 1, alpha = 0.05)
-reg_IIIE$ttest
-```
+Now we have a list, d, with five dataframes '1' through '5' for our five subgroups. 
 
 **Can you replicate Equations IIIA - IIIE? Calculate the point estimates for returns to scale for each sample. Is there a pattern relating to size of output?**
 
+We're going to run five separate regressions and display the coefficients on $ln(y)$ and the corresponding returns to scale. *Regression IIIA code as an example below.
+
+```{r Regression IIIA}
+# Regression IIIA
+reg_IIIA <- ols(data = d$`1`,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"))
+```
+
+```{r Regression IIIB-E, include=F}
+# Regression IIIB
+reg_IIIB <- ols(data = d$`2`,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"))
+
+# Regression IIIC
+reg_IIIC <- ols(data = d$`3`,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"))
+
+# Regression IIID
+reg_IIID <- ols(data = d$`4`,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"))
+
+# Regression IIIE
+reg_IIIE <- ols(data = d$`5`,y_data = "TCscaled",
+             X_data = c("Qlog","PLscaled","PKscaled"))
+```
+
 ```{r Regression III rts}
 # Create Returns to scale table
-rts <- rbind(1/reg_IIIA$b[2], 1/reg_IIIB$b[2], 1/reg_IIIC$b[2], 
-             1/reg_IIID$b[2], 1/reg_IIIE$b[2])
+coef <- rbind(reg_IIIA$b[2], reg_IIIB$b[2], reg_IIIC$b[2], 
+             reg_IIID$b[2], reg_IIIE$b[2])
+rts <- rbind(1/reg_IIIA$b[2], 1/reg_IIIB$b[2],
+             1/reg_IIIC$b[2], 1/reg_IIID$b[2],
+             1/reg_IIIE$b[2])
 rts_rownames <- rbind("IIIA", "IIIB","IIIC","IIID","IIIE")
 
-reg_III_df <- data.frame(rts_rownames,rts)
-
+reg_III_df <- data.frame(rts_rownames, coef, rts)
 
 reg_III_table <- reg_III_df %>% knitr::kable(
-    col.names = c("Regression","Returns to Scale"),
+    col.names = c("Regression","Coefficients", "Returns to Scale"),
     format.args = list(scientific = F, digits = 4),
     booktabs = T,
     escape = F
   )
-
 reg_III_table
 ```
 
 *Coefficients roughly match the results of the paper! As the size (output) of the firms get larger they see decreasing, increasing returns to scale. The largest bucket even sees decreasing returns to scale.*
-
+\newpage
 
 ## Question 6: 
 **Create ”dummy variables” for each industry. Interact them with the output variable to create five ”slope coefficients”.**
 
 ``` {r createdummies}
-
 # create group categorical var
 for (i in 1:5) {
-  d[[i]] %<>% mutate(gvar=i)
-}
+  d[[i]] %<>% mutate(gvar=i)}
 
 # unsplit
 df <- rbind(d[[1]], d[[2]], d[[3]], d[[4]], d[[5]])
@@ -453,7 +452,6 @@ df %<>%
       g3 = ifelse(gvar==3, 1, 0),
       g4 = ifelse(gvar==4, 1, 0),
       g5 = ifelse(gvar==5, 1, 0)) %>% select(-gvar)
-  
 
 # interact with output variable
 df %<>%
@@ -463,58 +461,56 @@ df %<>%
       lQ_C = Qlog*g3,
       lQ_D = Qlog*g4,
       lQ_E = Qlog*g5)
-
 ```
+\newpage
 
 **Run a model, letting the intercept and slope coefficient on output differ across plants, but let the remainder of the coefficients be pooled across plants.**
 
 ```{r OLS_dummies}
 
-# I'm not sure this is the right model... but I'm gettin similar coeffs!
-# I think this is correct my friend
-
-
 reg_IV <- ols(data = df, y_data = "TCscaled",
              X_data = c("lQ_A", "lQ_B", "lQ_C", "lQ_D", "lQ_E", 
                         "PLscaled", "PKscaled", "g1", "g2", "g3", "g4", "g5"), 
-             intercept = F, H0 = 0, alpha = 0.05)
-
-# Can also omit one of the dummie vars (g) and include an intercept >> get the same coefs
-reg_IV$ttest
+             intercept = F)
 
 reg_IV$mof_table
 
+```
+
+```{r OLS_dummies_table, echo = F}
+
 # Create Returns to scale table
-rts <- rbind(1/reg_IV$b[1], 1/reg_IV$b[2], 1/reg_IV$b[3], 
-             1/reg_IV$b[4], 1/reg_IV$b[5])
+coef <- rbind(reg_IV$b[1], reg_IV$b[2], reg_IV$b[3], 
+             reg_IV$b[4], reg_IV$b[5])
+rts <- rbind(1/reg_IV$b[1], 1/reg_IV$b[2],
+             1/reg_IV$b[3], 1/reg_IV$b[4],
+             1/reg_IV$b[5])
 rts_rownames <- rbind("IVA", "IVB","IVC","IVD","IVE")
 
-reg_IV_df <- data.frame(rts_rownames,rts)
-
+reg_IV_df <- data.frame(rts_rownames, coef, rts)
 
 reg_IV_table <- reg_IV_df %>% knitr::kable(
-    col.names = c("Regression","Returns to Scale"),
+    col.names = c("Regression","Coefficients", "Returns to Scale"),
     format.args = list(scientific = F, digits = 4),
     booktabs = T,
     escape = F
   )
-
 reg_IV_table
-
 ```
-
-
 
 **Are there any noticeable changes in returns to scale from the previous part?**
 
 *We got roughly the same point estimates on returns to scale as the previous part! There is a slight bit of variation which is from the pooled labor and capital price effect. I would imagine we'd get even closer to the previous result if we interacted our industry dummy variable with each of them.*
+\newpage
 
 ## Question 7:
 **Conduct a statistical test comparing the first model you estimate to the last model you estimated. (Hint: Is one model a restricted version of the other?). Would separate t-test have given you the same results?**
 
 Regression I is the restricted model, Regression IV is unrestricted model. This being, Regression I says that all five industries all have the same slope on output and all have the same intercept, thus placing restrictions.
+\bigbreak
 
 $F = \frac{(SSR_R - SSR_U)/J}{SSR_U/(n-k)}$
+\bigbreak
 
 ``` {r joint_test}
 # Calculate F_stat using SSR approach
@@ -522,7 +518,7 @@ ssr_u <- reg_IV$SSR
 dof <- reg_IV$dof
 
 ssr_r <- reg_I$SSR
-j <- 8 
+j <- 8 #four restrictions on both slope and intercept
 
 f_statistic <- ((ssr_r - ssr_u) / j) / (ssr_u / dof)
 
@@ -532,20 +528,20 @@ p_value <- pf(q = f_statistic, df1 = j, df2 = dof, lower.tail = F)
 f_test <- data.frame(
   f_statistic = f_statistic %>% as.vector(),
   p_value = p_value %>% as.vector())
+
 f_test
 
-F_test(df, "TCscaled", c("lQ_A", "lQ_B", "lQ_C", "lQ_D", "lQ_E", "PLscaled","PKscaled", "g1", "g2", "g3", "g4"))
-
 ```
-*As you can see, we got an incredibly low p_value between the first and last model, menaing the differentiated slope on output and intercept coefficients are joint, statistically significant. This SSR approach is different than just doing an F-Test on the last regression because it is saying, are all the variables (including the pooled price on labor and capital) jointly, statistically significant from just the mean of the scaled log of total cost. I don't even want to begin thinking about running a myriad of t-test on the 8 individual restrictions of our first model. Theory tells us we are likely to get different results because the F-test correctly ajusts the joint confidence intervals while seperate t-test would be a ridgid overlapping of confidence intervals that may(not) correctly approximate the F-test.*
+*As you can see, we got an incredibly low p-value between the first and last model, menaing the differentiated slope on output and intercept coefficients are jointly, statistically significant. This SSR approach is different than just doing an F-Test on the last regression because it is saying, all the variables (including the pooled price on labor and capital) are jointly, statistically significant from just the mean of the scaled log of total cost. I don't even want to begin thinking about running a myriad of t-test on the 8 individual restrictions of our first model. Theory tells us we are likely to get different results because the F-test correctly ajusts the joint confidence intervals while seperate t-test would be a ridgid overlapping of confidence intervals that may(not) correctly approximate the F-test.*
+\newpage
 
 ## Question 8:
 **To see whether returns to scale declined with output, Nerlove tested a nonlinear specification by including $ln(y)^2$ as a regressor. Conduct a statistical test you feel is appropriate to test this hypothesis.**
 
-It follows that returns to scale (r)  $= \frac{1}{\alpha + \beta ln(y)}$, where $\alpha$ is the cofficient on ln(y) and $\beta$ is the coefficient on $ln(y)^2$ in the below regression.
+It follows that returns to scale (r)  $= \frac{1}{\alpha + \beta ln(y)}$, where $\alpha$ is the cofficient on $ln(y)$ and $\beta$ is the coefficient on $ln(y)^2$ in the regression below.
+\bigbreak
 
 ``` {r nonlinearspec}
-
 df %<>% mutate(Qlog_sq = (Qlog)^2)
 
 reg_nl <- ols(data = df, y_data = "TCscaled",
@@ -557,7 +553,8 @@ reg_nl$ttest
 
 We're going to save these results and first plot our calculated returns to scale variable against log output to see if there is a trend.
 
-```{r}
+```{r nonlinear2}
+# Calculated RTS
 df %<>% mutate(rts_nl = 1/(reg_nl$b[2] + reg_nl$b[3]*df$Qlog))
 
 ggplot(df, aes(x=Qlog, y=rts_nl)) + 
@@ -565,15 +562,18 @@ ggplot(df, aes(x=Qlog, y=rts_nl)) +
   labs(title="Decreasing Returns to Scale?", x="Log Output", y="Calculated RTS")
 ```
 
-It would seem that our Returns to Scale Decreases as output increases. Whether this is statisically significant is the question. We'll run a regression with these two variables and our pooled labor and capital price in a t-test. Dut to the non-linear decline of returns to scale, we'll also include the squared log output in the regression.
+It would seem that our returns to scale decreases as output increases. Whether this is statisically significant is the question. We'll run a regression of our calculated returns to scale on the output and it's square; then, we'll run our F-test function comparing this function to just the mean of RTS. This will adquately measure for joint significance.
+\bigbreak
 
-```{r}
+```{r nonlinear3}
 reg_nl2 <- ols(data = df, y_data = "rts_nl",
-             X_data = c("Qlog","Qlog_sq","PLscaled","PKscaled"),
+             X_data = c("Qlog","Qlog_sq"), 
              intercept = T, H0 = 0, alpha = 0.05)
 
 reg_nl2$ttest
 
+reg_nl2_f <- F_test(data = df, y_var = "rts_nl", X_vars = c("Qlog","Qlog_sq"))
+F_p <- reg_nl2_f[2] %>% signif(4) %>% as.character()
 ```
 
-Here, it would seem that for every one percent increase of output for firms, we see a `r reg_nl2$b[2]/100` decrease in the firms returns to scale. The results is statistically significant, though, we did not take the robust variance of the original paper throughout, so I don't know how much we can rely on that.
+*Here, it would seem that for every one percent increase of output for firms, we see a `r round(reg_nl2$b[2]/100,4)` unit decrease in the firms' returns to scale; and the output and its square are independently significant (notwithstanding the robust variance issue). Also, the p-value on our F-test is `r F_p` which tells us that output (and its square) is jointly, statistically significant on returns to scale.*
